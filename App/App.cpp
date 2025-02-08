@@ -14,16 +14,15 @@ class MainLayer : public Bedxo::Layer
         ImGui::SameLine();
         ImGui::Text("Clicked: %d", clickedTimes);
 		ImGui::Text("Logo texture: %d", m_Logo->GetTexture());
-		ImGui::Image(m_Logo->GetTexture(), m_Logo->GetSize());
+		ImGui::ImageButton("Click Me",m_Logo->GetTexture(), m_Logo->GetSize());
         ImGui::End();
-        ImGui::ShowDemoWindow();
+        //ImGui::ShowDemoWindow();
     }
 
 	void virtual OnStart(Bedxo::Application* app) override
 	{
 		m_Logo = app->LoadImageFromMemory((void*)::logo, sizeof(::logo));
-		std::cout << "Logo size: " << m_Logo->GetSize().x << "x" << m_Logo->GetSize().y << std::endl;
-		std::cout << "Logo texture: " << m_Logo->GetTexture() << std::endl;
+        app->m_Config.TitleBarIconData = m_Logo;
 	}
 private:
     int clickedTimes = 0;
@@ -48,8 +47,6 @@ class MainLayer2 : public Bedxo::Layer
     void virtual OnStart(Bedxo::Application* app) override
     {
         m_Logo = app->LoadImageFromFile("./favicon.png");
-        std::cout << "Logo2 size: " << m_Logo->GetSize().x << "x" << m_Logo->GetSize().y << std::endl;
-        std::cout << "Logo2 texture: " << m_Logo->GetTexture() << std::endl;
     }
 private:
     int clickedTimes = 0;
@@ -62,8 +59,9 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 int main()
 #endif
 {
-    Bedxo::Application app = Bedxo::Application();
-    app.m_WindowTitle = "Tetassasdasdasd";
+	auto appConfig = Bedxo::AppConfig();
+	appConfig.Title = "Bedxo Application";
+    Bedxo::Application app = Bedxo::Application(appConfig);
     auto mainLayer = std::make_shared<MainLayer>();
     auto mainLayer2 = std::make_shared<MainLayer2>();
     app.AddLayer(mainLayer);

@@ -9,16 +9,31 @@
 #include <memory>
 #include "Layer.h"
 #include "Image.h"
+#include <functional>
+
 extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 namespace Bedxo
 {
+
+	struct AppConfig
+	{
+		std::string Title = "Bedxo Application";
+		/// <summary>
+		/// This one may be set on the start of any layer <para/>
+		/// This will clamp the height to 30px, the width will not be changed
+		/// </summary>
+		std::shared_ptr<Image> TitleBarIconData = nullptr;
+		//custom menu callback to draw whatever you want in the 40px title bar after the logo
+		std::function<void(Application*)> MenuBarCallback = nullptr;
+	};
+
 
 	LRESULT WINAPI WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
 	class Application
 	{
 	public:
-		Application();
+		Application(AppConfig);
 		void Start();
 		bool CreateDeviceD3D(HWND hWnd);
 		void CreateRenderTarget();
@@ -30,7 +45,7 @@ namespace Bedxo
 		std::shared_ptr<Image> LoadImageFromMemory(const void* data, size_t size);
 		std::shared_ptr<Image> LoadImageFromFile(const std::string& path);
 
-		std::string m_WindowTitle;
+		AppConfig m_Config;
 
 		static UINT g_ResizeWidth;
 		static UINT g_ResizeHeight;

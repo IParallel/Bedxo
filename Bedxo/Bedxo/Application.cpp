@@ -2,13 +2,14 @@
 #include <iostream>
 #include <windowsx.h>
 #include <D3DX11tex.h>
+#include "icons.h"
 namespace Bedxo
 {
 	UINT Application::g_ResizeWidth = 0;
 	UINT Application::g_ResizeHeight = 0;
 
 
-	Application::Application()
+	Application::Application(AppConfig config) : m_Config(config)
 	{
 	}
 
@@ -16,11 +17,11 @@ namespace Bedxo
 	{
 		ImGui_ImplWin32_EnableDpiAwareness();
 		WNDCLASSEXA wc = { sizeof(wc), CS_CLASSDC, WndProcStub, 0L, 0L, GetModuleHandle(nullptr),
-			nullptr, nullptr, nullptr, nullptr, m_WindowTitle.c_str(), nullptr };
+			nullptr, nullptr, nullptr, nullptr, m_Config.Title.c_str(), nullptr };
 		::RegisterClassEx(&wc);
 
 		HWND hwnd = ::CreateWindowEx(WS_EX_APPWINDOW, // Behave as normal window idk why the normal windows get locked on alt+tab :P
-			wc.lpszClassName, m_WindowTitle.c_str(),
+			wc.lpszClassName, m_Config.Title.c_str(),
 			WS_POPUP,                        // Borderless window
 			100, 100, 1280, 800,
 			nullptr, nullptr, wc.hInstance, nullptr);
@@ -81,6 +82,12 @@ namespace Bedxo
 		{
 			layer->OnStart(this);
 		}
+
+		const std::shared_ptr<Image> minimizeIcon = LoadImageFromMemory((void*)::minimize_icon, sizeof(::minimize_icon));
+		const std::shared_ptr<Image> maximizeIcon = LoadImageFromMemory((void*)::maximize_icon, sizeof(::maximize_icon));
+		const std::shared_ptr<Image> restoreIcon = LoadImageFromMemory((void*)::restore_icon, sizeof(::restore_icon));
+		const std::shared_ptr<Image> closeIcon = LoadImageFromMemory((void*)::close_icon, sizeof(::close_icon));
+
 		// Main loop
 		bool done = false;
 		while (!done)
@@ -126,28 +133,42 @@ namespace Bedxo
 				{ // MENU BAR DRAW
 					ImGui::SetNextWindowPos(ImVec2(0, 0));
 					ImGui::SetNextWindowSize(ImVec2(ImGui::GetIO().DisplaySize.x, titleBarHeight));  // Adjust height of title bar
-
 					ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0);
 					ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0);
 					ImGui::PushStyleColor(ImGuiCol_WindowBg, IM_COL32(10, 10, 10, 255)); // Dark color
 
-					if (ImGui::Begin((m_WindowTitle + "##TitleBar").c_str(), nullptr,
+					if (ImGui::Begin((m_Config.Title + "##TitleBar").c_str(), nullptr,
 						ImGuiWindowFlags_NoDecoration |
 						ImGuiWindowFlags_NoDocking |
 						ImGuiWindowFlags_NoMove |
 						ImGuiWindowFlags_NoCollapse |
 						ImGuiWindowFlags_NoScrollbar)) {
 
-						static auto tbButtonSizes = ImVec2{ 40, 25 };
+						if (m_Config.TitleBarIconData != nullptr)
+						{
+							// draw the image in the center of this window
+							ImGui::SetCursorPos(ImVec2{ImGui::GetCursorPosX(), 5});
+							auto size = m_Config.TitleBarIconData->GetSize();
+							ImGui::Image(m_Config.TitleBarIconData->GetTexture(), ImVec2{size.x, 30});
+						}
+						ImGui::SameLine(0, 10);
+
+						if (m_Config.MenuBarCallback != nullptr)
+						{
+							m_Config.MenuBarCallback(this);
+						}
+						ImGui::SameLine();
+
+						static auto tbButtonSizes = ImVec2{ 32, 32 };
 						static int tbButtonSpacing = 5;
 						static ImU32 tbButtonBgColor = IM_COL32(0, 0, 0, 0);
 						static ImU32 tbButtonHvColor = IM_COL32(255, 255, 255, 100);
 						static ImU32 tbButtonHvExitColor = IM_COL32(255, 0, 0, 100);
-						auto textSize = ImGui::CalcTextSize(m_WindowTitle.c_str());
+						auto textSize = ImGui::CalcTextSize(m_Config.Title.c_str());
 
 						ImGui::SetCursorPosX(ImGui::GetWindowWidth() / 2 - textSize.x / 2);
-						ImGui::Text(m_WindowTitle.c_str());
-						ImGui::SameLine(ImGui::GetWindowWidth() - ((tbButtonSizes.x + 5) * 3));
+						ImGui::Text(m_Config.Title.c_str());
+						ImGui::SameLine(ImGui::GetWindowWidth() - ((tbButtonSizes.x + 16) * 3));
 						ImGui::PushStyleColor(ImGuiCol_Button, tbButtonBgColor);
 						ImGui::PushStyleColor(ImGuiCol_ButtonHovered, tbButtonHvColor);
 						ImGui::PushStyleColor(ImGuiCol_ButtonActive, tbButtonBgColor);
@@ -155,12 +176,12 @@ namespace Bedxo
 						// we need to center the buttons in the title bar
 						ImGui::SetCursorPosY(cursorY);
 						ImGui::BeginGroup();
-						if (ImGui::Button("-", tbButtonSizes)) {
+						if (ImGui::ImageButton("minimize", minimizeIcon->GetTexture(), tbButtonSizes)) {
 							ShowWindow(hwnd, SW_MINIMIZE);
 						}
 						ImGui::SameLine(0, tbButtonSpacing);
 						ImGui::SetCursorPosY(cursorY);
-						if (ImGui::Button("M", tbButtonSizes)) {
+						if (ImGui::ImageButton("maximize", m_Maximized ? restoreIcon->GetTexture() : maximizeIcon->GetTexture(), tbButtonSizes)) {
 
 							if (!m_Maximized)
 							{
@@ -196,7 +217,7 @@ namespace Bedxo
 						ImGui::PushStyleColor(ImGuiCol_ButtonHovered, tbButtonHvExitColor);
 						ImGui::SameLine(0, tbButtonSpacing);
 						ImGui::SetCursorPosY(cursorY);
-						if (ImGui::Button("X", tbButtonSizes)) {
+						if (ImGui::ImageButton("close", closeIcon->GetTexture(), tbButtonSizes)) {
 							PostQuitMessage(0);
 						}
 						ImGui::EndGroup();
@@ -334,6 +355,11 @@ namespace Bedxo
 
 	std::shared_ptr<Image> Application::LoadImageFromMemory(const void* data, size_t size)
 	{
+		if (m_pd3dDevice == nullptr)
+		{
+			std::cout << "Failed to load img -> Direct3D device is not initialized" << std::endl;
+			return nullptr;
+		}
 		ID3D11ShaderResourceView* shader;
 		D3DX11CreateShaderResourceViewFromMemory(m_pd3dDevice, data, size, nullptr, nullptr, &shader, nullptr);
 		// Get the texture size
@@ -351,6 +377,11 @@ namespace Bedxo
 
 	std::shared_ptr<Image> Application::LoadImageFromFile(const std::string& path)
 	{
+		if (m_pd3dDevice == nullptr)
+		{
+			std::cout << "Failed to load img -> Direct3D device is not initialized" << std::endl;
+			return nullptr;
+		}
 		ID3D11ShaderResourceView* shader;
 		D3DX11CreateShaderResourceViewFromFileA(m_pd3dDevice, path.c_str(), nullptr, nullptr, &shader, nullptr);
 		// Get the texture size
@@ -383,7 +414,7 @@ namespace Bedxo
 			ScreenToClient(hWnd, &pt);
 
 			static const int borderSize = 5;
-			static const int titleBarHeight = 30;
+			static const int titleBarHeight = 40;
 			static const int titleBarRightLimit = 135;
 
 			// TOP-LEFT CORNER

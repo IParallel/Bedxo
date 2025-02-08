@@ -20,6 +20,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Bedxo\Application.h" />
+    <ClInclude Include="Bedxo\icons.h" />
     <ClInclude Include="Bedxo\Image.h" />
     <ClInclude Include="Bedxo\Layer.h" />
     <ClInclude Include="imgui\imconfig.h" />
