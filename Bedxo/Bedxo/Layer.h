@@ -1,8 +1,16 @@
 #pragma once
-
-class Layer
+namespace Bedxo
 {
-public:
-	virtual void OnDraw(){};
-	virtual void OnRender(){};
-};
+	class Application;
+	class Layer
+	{
+	public:
+		Layer() {}
+		virtual ~Layer() {}
+		virtual void OnDraw(Application* app) {};
+		// Called every frame
+		virtual void OnRender(Application* app) {};
+		// Called only once
+		virtual void OnStart(Application* app) {};
+	};
+}

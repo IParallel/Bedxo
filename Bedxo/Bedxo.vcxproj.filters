@@ -45,6 +45,9 @@
     <ClInclude Include="Bedxo\Layer.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="Bedxo\Image.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Bedxo\Application.cpp">
