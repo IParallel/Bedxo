@@ -48,6 +48,9 @@ namespace Bedxo
 		io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;         // Enable Docking
 		// io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;       // Enable Multi-Viewport / Platform Windows
 
+		// disabling the imgui.ini file
+		io.IniFilename = nullptr;
+
 		// Setup Dear ImGui style
 		ImGui::StyleColorsDark();
 		//ImGui::StyleColorsLight();
@@ -119,9 +122,10 @@ namespace Bedxo
 
 			{
 
+				static int titleBarHeight = 40;
 				{ // MENU BAR DRAW
 					ImGui::SetNextWindowPos(ImVec2(0, 0));
-					ImGui::SetNextWindowSize(ImVec2(ImGui::GetIO().DisplaySize.x, 30));  // Adjust height of title bar
+					ImGui::SetNextWindowSize(ImVec2(ImGui::GetIO().DisplaySize.x, titleBarHeight));  // Adjust height of title bar
 
 					ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0);
 					ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0);
@@ -134,7 +138,7 @@ namespace Bedxo
 						ImGuiWindowFlags_NoCollapse |
 						ImGuiWindowFlags_NoScrollbar)) {
 
-						static auto tbButtonSizes = ImVec2{ 30, 27 };
+						static auto tbButtonSizes = ImVec2{ 40, 25 };
 						static int tbButtonSpacing = 5;
 						static ImU32 tbButtonBgColor = IM_COL32(0, 0, 0, 0);
 						static ImU32 tbButtonHvColor = IM_COL32(255, 255, 255, 100);
@@ -143,7 +147,7 @@ namespace Bedxo
 
 						ImGui::SetCursorPosX(ImGui::GetWindowWidth() / 2 - textSize.x / 2);
 						ImGui::Text(m_WindowTitle.c_str());
-						ImGui::SameLine(ImGui::GetWindowWidth() - ((tbButtonSizes.x + 10) * 3));
+						ImGui::SameLine(ImGui::GetWindowWidth() - ((tbButtonSizes.x + 5) * 3));
 						ImGui::PushStyleColor(ImGuiCol_Button, tbButtonBgColor);
 						ImGui::PushStyleColor(ImGuiCol_ButtonHovered, tbButtonHvColor);
 						ImGui::PushStyleColor(ImGuiCol_ButtonActive, tbButtonBgColor);
@@ -209,10 +213,10 @@ namespace Bedxo
 
 				ImGuiViewport* viewport = ImGui::GetMainViewport();
 				auto windowPos = viewport->Pos;
-				windowPos.y += 30;
+				windowPos.y += titleBarHeight;
 				ImGui::SetNextWindowPos(windowPos);
 				auto windowSize = viewport->Size;
-				windowSize.y -= 30;
+				windowSize.y -= titleBarHeight;
 				ImGui::SetNextWindowSize(windowSize);
 				ImGui::SetNextWindowViewport(viewport->ID);
 				ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.0f);
@@ -328,7 +332,7 @@ namespace Bedxo
 		m_Layers.push_back(layer);
 	}
 
-	Image* Application::LoadImageFromMemory(const void* data, size_t size)
+	std::shared_ptr<Image> Application::LoadImageFromMemory(const void* data, size_t size)
 	{
 		ID3D11ShaderResourceView* shader;
 		D3DX11CreateShaderResourceViewFromMemory(m_pd3dDevice, data, size, nullptr, nullptr, &shader, nullptr);
@@ -342,10 +346,10 @@ namespace Bedxo
 			texture->GetDesc(&desc);
 			resource->Release();
 		}
-		return new Image(shader, ImVec2(desc.Width, desc.Height));
+		return std::make_shared<Image>(shader, ImVec2(desc.Width, desc.Height));
 	}
 
-	Image* Application::LoadImageFromFile(const std::string& path)
+	std::shared_ptr<Image> Application::LoadImageFromFile(const std::string& path)
 	{
 		ID3D11ShaderResourceView* shader;
 		D3DX11CreateShaderResourceViewFromFileA(m_pd3dDevice, path.c_str(), nullptr, nullptr, &shader, nullptr);
@@ -358,7 +362,7 @@ namespace Bedxo
 			texture->GetDesc(&desc);
 			resource->Release();
 		}
-		return new Image(shader, ImVec2(desc.Width, desc.Height));
+		return std::make_shared<Image>(shader, ImVec2(desc.Width, desc.Height));
 	}
 	LRESULT __stdcall Application::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 	{
@@ -380,7 +384,7 @@ namespace Bedxo
 
 			static const int borderSize = 5;
 			static const int titleBarHeight = 30;
-			static const int titleBarRightLimit = 100;
+			static const int titleBarRightLimit = 135;
 
 			// TOP-LEFT CORNER
 			if (pt.y < borderSize && pt.x < borderSize)

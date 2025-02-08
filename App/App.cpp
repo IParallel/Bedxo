@@ -27,7 +27,7 @@ class MainLayer : public Bedxo::Layer
 	}
 private:
     int clickedTimes = 0;
-    Bedxo::Image* m_Logo = nullptr;
+    std::shared_ptr<Bedxo::Image> m_Logo = nullptr;
 };
 
 class MainLayer2 : public Bedxo::Layer
@@ -53,7 +53,7 @@ class MainLayer2 : public Bedxo::Layer
     }
 private:
     int clickedTimes = 0;
-	Bedxo::Image* m_Logo = nullptr;
+	std::shared_ptr<Bedxo::Image> m_Logo = nullptr;
 };
 
 #ifdef _DIST

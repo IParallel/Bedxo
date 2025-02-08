@@ -27,8 +27,8 @@ namespace Bedxo
 
 		void AddLayer(std::shared_ptr<Layer> layer);
 
-		Image* LoadImageFromMemory(const void* data, size_t size);
-		Image* LoadImageFromFile(const std::string& path);
+		std::shared_ptr<Image> LoadImageFromMemory(const void* data, size_t size);
+		std::shared_ptr<Image> LoadImageFromFile(const std::string& path);
 
 		std::string m_WindowTitle;
 
