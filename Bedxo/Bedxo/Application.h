@@ -25,6 +25,7 @@ namespace Bedxo
 		std::shared_ptr<Image> TitleBarIconData = nullptr;
 		//custom menu callback to draw whatever you want in the 40px title bar after the logo
 		std::function<void(Application*)> MenuBarCallback = nullptr;
+		ImU32 TitleBarBgColor = IM_COL32(10, 10, 10, 255);
 	};
 
 

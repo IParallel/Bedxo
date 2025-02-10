@@ -135,7 +135,7 @@ namespace Bedxo
 					ImGui::SetNextWindowSize(ImVec2(ImGui::GetIO().DisplaySize.x, titleBarHeight));  // Adjust height of title bar
 					ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0);
 					ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0);
-					ImGui::PushStyleColor(ImGuiCol_WindowBg, IM_COL32(10, 10, 10, 255)); // Dark color
+					ImGui::PushStyleColor(ImGuiCol_WindowBg, m_Config.TitleBarBgColor); // Dark color
 
 					if (ImGui::Begin((m_Config.Title + "##TitleBar").c_str(), nullptr,
 						ImGuiWindowFlags_NoDecoration |
