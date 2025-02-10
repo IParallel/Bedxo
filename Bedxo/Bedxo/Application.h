@@ -25,7 +25,10 @@ namespace Bedxo
 		std::shared_ptr<Image> TitleBarIconData = nullptr;
 		//custom menu callback to draw whatever you want in the 40px title bar after the logo
 		std::function<void(Application*)> MenuBarCallback = nullptr;
+		// Should be in IM_COL32 format
 		ImU32 TitleBarBgColor = IM_COL32(10, 10, 10, 255);
+		// If this enabled the app will not load the default font
+		bool UseCustomFont = false;
 	};
 
 
@@ -40,6 +43,8 @@ namespace Bedxo
 		void CreateRenderTarget();
 		void CleanupDeviceD3D();
 		void CleanupRenderTarget();
+		void ResizeSwapChain();
+		void Frame(HWND hwnd);
 
 		void AddLayer(std::shared_ptr<Layer> layer);
 
@@ -69,7 +74,15 @@ namespace Bedxo
 		bool                     m_SwapChainOccluded = false;
 		ID3D11RenderTargetView* m_mainRenderTargetView = nullptr;
 		std::vector<std::shared_ptr<Layer>> m_Layers;
+
+		std::shared_ptr<Image> m_MinimizeIcon;
+		std::shared_ptr<Image> m_MaximizeIcon;
+		std::shared_ptr<Image> m_RestoreIcon;
+		std::shared_ptr<Image> m_CloseIcon;
+
 		bool m_Maximized = false;
+		bool m_Inited = false;
+		bool m_Rendering = false;
 		ImVec2 lastSize;
 		ImVec2 lastPos;
 	};

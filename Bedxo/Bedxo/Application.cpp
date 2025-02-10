@@ -69,7 +69,8 @@ namespace Bedxo
 		// - Read 'docs/FONTS.md' for more instructions and details.
 		// - Remember that in C/C++ if you want to include a backslash \ in a string literal you need to write a double backslash \\ !
 		//io.Fonts->AddFontDefault();
-		io.Fonts->AddFontFromFileTTF("c:\\Windows\\Fonts\\tahoma.ttf", 18.0f);
+		if (!m_Config.UseCustomFont)
+			io.Fonts->AddFontFromFileTTF("c:\\Windows\\Fonts\\tahoma.ttf", 18.0f);
 		//io.Fonts->AddFontFromFileTTF("../../misc/fonts/DroidSans.ttf", 16.0f);
 		//io.Fonts->AddFontFromFileTTF("../../misc/fonts/Roboto-Medium.ttf", 16.0f);
 		//io.Fonts->AddFontFromFileTTF("../../misc/fonts/Cousine-Regular.ttf", 15.0f);
@@ -77,19 +78,19 @@ namespace Bedxo
 		//IM_ASSERT(font != nullptr);
 
 		// Our state
-		ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
 		for (auto& layer : m_Layers)
 		{
 			layer->OnStart(this);
 		}
 
-		const std::shared_ptr<Image> minimizeIcon = LoadImageFromMemory((void*)::minimize_icon, sizeof(::minimize_icon));
-		const std::shared_ptr<Image> maximizeIcon = LoadImageFromMemory((void*)::maximize_icon, sizeof(::maximize_icon));
-		const std::shared_ptr<Image> restoreIcon = LoadImageFromMemory((void*)::restore_icon, sizeof(::restore_icon));
-		const std::shared_ptr<Image> closeIcon = LoadImageFromMemory((void*)::close_icon, sizeof(::close_icon));
+		m_MinimizeIcon = LoadImageFromMemory((void*)::minimize_icon, sizeof(::minimize_icon));
+		m_MaximizeIcon = LoadImageFromMemory((void*)::maximize_icon, sizeof(::maximize_icon));
+		m_RestoreIcon = LoadImageFromMemory((void*)::restore_icon, sizeof(::restore_icon));
+		m_CloseIcon = LoadImageFromMemory((void*)::close_icon, sizeof(::close_icon));
 
 		// Main loop
 		bool done = false;
+		m_Inited = true;
 		while (!done)
 		{
 			// Poll and handle messages (inputs, window resize, etc.)
@@ -113,175 +114,9 @@ namespace Bedxo
 			}
 			m_SwapChainOccluded = false;
 
-			// Handle window resize (we don't resize directly in the WM_SIZE handler)
-			if (g_ResizeWidth != 0 && g_ResizeHeight != 0)
-			{
-				CleanupRenderTarget();
-				m_pSwapChain->ResizeBuffers(0, g_ResizeWidth, g_ResizeHeight, DXGI_FORMAT_UNKNOWN, 0);
-				g_ResizeWidth = g_ResizeHeight = 0;
-				CreateRenderTarget();
+			{ // frame render
+				Frame(hwnd);
 			}
-
-			// Start the Dear ImGui frame
-			ImGui_ImplDX11_NewFrame();
-			ImGui_ImplWin32_NewFrame();
-			ImGui::NewFrame();
-
-			{
-
-				static int titleBarHeight = 40;
-				{ // MENU BAR DRAW
-					ImGui::SetNextWindowPos(ImVec2(0, 0));
-					ImGui::SetNextWindowSize(ImVec2(ImGui::GetIO().DisplaySize.x, titleBarHeight));  // Adjust height of title bar
-					ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0);
-					ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0);
-					ImGui::PushStyleColor(ImGuiCol_WindowBg, m_Config.TitleBarBgColor); // Dark color
-
-					if (ImGui::Begin((m_Config.Title + "##TitleBar").c_str(), nullptr,
-						ImGuiWindowFlags_NoDecoration |
-						ImGuiWindowFlags_NoDocking |
-						ImGuiWindowFlags_NoMove |
-						ImGuiWindowFlags_NoCollapse |
-						ImGuiWindowFlags_NoScrollbar)) {
-
-						if (m_Config.TitleBarIconData != nullptr)
-						{
-							// draw the image in the center of this window
-							ImGui::SetCursorPos(ImVec2{ImGui::GetCursorPosX(), 5});
-							auto size = m_Config.TitleBarIconData->GetSize();
-							ImGui::Image(m_Config.TitleBarIconData->GetTexture(), ImVec2{size.x, 30});
-						}
-						ImGui::SameLine(0, 10);
-
-						if (m_Config.MenuBarCallback != nullptr)
-						{
-							m_Config.MenuBarCallback(this);
-						}
-						ImGui::SameLine();
-
-						static auto tbButtonSizes = ImVec2{ 32, 32 };
-						static int tbButtonSpacing = 5;
-						static ImU32 tbButtonBgColor = IM_COL32(0, 0, 0, 0);
-						static ImU32 tbButtonHvColor = IM_COL32(255, 255, 255, 100);
-						static ImU32 tbButtonHvExitColor = IM_COL32(255, 0, 0, 100);
-						auto textSize = ImGui::CalcTextSize(m_Config.Title.c_str());
-
-						ImGui::SetCursorPosX(ImGui::GetWindowWidth() / 2 - textSize.x / 2);
-						ImGui::Text(m_Config.Title.c_str());
-						ImGui::SameLine(ImGui::GetWindowWidth() - ((tbButtonSizes.x + 16) * 3));
-						ImGui::PushStyleColor(ImGuiCol_Button, tbButtonBgColor);
-						ImGui::PushStyleColor(ImGuiCol_ButtonHovered, tbButtonHvColor);
-						ImGui::PushStyleColor(ImGuiCol_ButtonActive, tbButtonBgColor);
-						auto cursorY = ImGui::GetCursorPosY() - 5;
-						// we need to center the buttons in the title bar
-						ImGui::SetCursorPosY(cursorY);
-						ImGui::BeginGroup();
-						if (ImGui::ImageButton("minimize", minimizeIcon->GetTexture(), tbButtonSizes)) {
-							ShowWindow(hwnd, SW_MINIMIZE);
-						}
-						ImGui::SameLine(0, tbButtonSpacing);
-						ImGui::SetCursorPosY(cursorY);
-						if (ImGui::ImageButton("maximize", m_Maximized ? restoreIcon->GetTexture() : maximizeIcon->GetTexture(), tbButtonSizes)) {
-
-							if (!m_Maximized)
-							{
-								MONITORINFO monitorInfo = { sizeof(MONITORINFO) };
-								RECT wSize;
-								GetWindowRect(hwnd, &wSize);
-								lastPos.x = wSize.left;
-								lastPos.y = wSize.top;
-								lastSize.x = wSize.right - wSize.left;
-								lastSize.y = wSize.bottom - wSize.top;
-								if (GetMonitorInfo(MonitorFromWindow(hwnd, MONITOR_DEFAULTTONEAREST), &monitorInfo)) {
-									RECT workArea = monitorInfo.rcWork;
-
-									SetWindowPos(hwnd, nullptr,
-										workArea.left, workArea.top,
-										workArea.right - workArea.left,
-										workArea.bottom - workArea.top,
-										SWP_NOZORDER | SWP_NOACTIVATE);
-									m_Maximized = true;
-								}
-							}
-							else
-							{
-								SetWindowPos(hwnd, nullptr,
-									lastPos.x, lastPos.y,
-									lastSize.x,
-									lastSize.y,
-									SWP_NOZORDER | SWP_NOACTIVATE);
-								m_Maximized = false;
-							}
-
-						}
-						ImGui::PushStyleColor(ImGuiCol_ButtonHovered, tbButtonHvExitColor);
-						ImGui::SameLine(0, tbButtonSpacing);
-						ImGui::SetCursorPosY(cursorY);
-						if (ImGui::ImageButton("close", closeIcon->GetTexture(), tbButtonSizes)) {
-							PostQuitMessage(0);
-						}
-						ImGui::EndGroup();
-						ImGui::PopStyleColor(4);
-
-						ImGui::End();
-					}
-
-					ImGui::PopStyleVar(2);
-					ImGui::PopStyleColor(1);
-				}
-
-				ImGuiWindowFlags window_flags = ImGuiWindowFlags_NoDocking;
-
-				ImGuiViewport* viewport = ImGui::GetMainViewport();
-				auto windowPos = viewport->Pos;
-				windowPos.y += titleBarHeight;
-				ImGui::SetNextWindowPos(windowPos);
-				auto windowSize = viewport->Size;
-				windowSize.y -= titleBarHeight;
-				ImGui::SetNextWindowSize(windowSize);
-				ImGui::SetNextWindowViewport(viewport->ID);
-				ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.0f);
-				ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
-				window_flags |= ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove;
-				window_flags |= ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoNavFocus;
-
-				ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 3.0f);
-
-				ImGui::PushStyleColor(ImGuiCol_MenuBarBg, ImVec4{ 0.0f, 0.0f, 0.0f, 0.0f });
-
-				ImGui::Begin("DockSpaceWindow", nullptr, window_flags);
-				ImGui::PopStyleVar(3);
-				ImGui::PopStyleColor();
-
-				auto dockId = ImGui::GetID("MyDockspace");
-				ImGui::DockSpace(dockId, ImVec2{ (float)g_ResizeWidth, (float)g_ResizeHeight }, ImGuiDockNodeFlags_NoUndocking);
-				for (auto& layer : m_Layers)
-				{
-					ImGui::SetNextWindowDockID(dockId, ImGuiCond_Always);
-					layer->OnRender(this);
-				}
-
-				ImGui::End();
-			}
-
-			// Rendering
-			ImGui::Render();
-			const float clear_color_with_alpha[4] = { clear_color.x * clear_color.w, clear_color.y * clear_color.w, clear_color.z * clear_color.w, clear_color.w };
-			m_pd3dDeviceContext->OMSetRenderTargets(1, &m_mainRenderTargetView, nullptr);
-			m_pd3dDeviceContext->ClearRenderTargetView(m_mainRenderTargetView, clear_color_with_alpha);
-			ImGui_ImplDX11_RenderDrawData(ImGui::GetDrawData());
-
-			// Update and Render additional Platform Windows
-			if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
-			{
-				ImGui::UpdatePlatformWindows();
-				ImGui::RenderPlatformWindowsDefault();
-			}
-
-			// Present
-			HRESULT hr = m_pSwapChain->Present(1, 0);   // Present with vsync
-			//HRESULT hr = g_pSwapChain->Present(0, 0); // Present without vsync
-			m_SwapChainOccluded = (hr == DXGI_STATUS_OCCLUDED);
 		}
 
 		// Cleanup
@@ -348,6 +183,191 @@ namespace Bedxo
 		if (m_mainRenderTargetView) { m_mainRenderTargetView->Release(); m_mainRenderTargetView = nullptr; }
 	}
 
+	void Application::ResizeSwapChain()
+	{
+		CleanupRenderTarget();
+		m_pSwapChain->ResizeBuffers(0, g_ResizeWidth, g_ResizeHeight, DXGI_FORMAT_UNKNOWN, 0);
+		g_ResizeWidth = g_ResizeHeight = 0;
+		CreateRenderTarget();
+	}
+
+	void Application::Frame(HWND hwnd)
+	{
+		if (!m_Inited)
+			return;
+
+		if (hwnd == nullptr)
+			return;
+
+		static ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
+		auto& io = ImGui::GetIO();
+		// Start the Dear ImGui frame
+		ImGui_ImplDX11_NewFrame();
+		ImGui_ImplWin32_NewFrame();
+		if (m_Rendering)
+			return;
+
+		m_Rendering = true; // we need to lock the rendering to prevent calling ImGui::NewFrame multiple times and fail
+
+		ImGui::NewFrame();
+		{
+			static int titleBarHeight = 40;
+			{ // MENU BAR DRAW
+				ImGui::SetNextWindowPos(ImVec2(0, 0));
+				ImGui::SetNextWindowSize(ImVec2(ImGui::GetIO().DisplaySize.x, titleBarHeight));  // Adjust height of title bar
+				ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0);
+				ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0);
+				ImGui::PushStyleColor(ImGuiCol_WindowBg, m_Config.TitleBarBgColor); // Dark color
+
+				if (ImGui::Begin((m_Config.Title + "##TitleBar").c_str(), nullptr,
+					ImGuiWindowFlags_NoDecoration |
+					ImGuiWindowFlags_NoDocking |
+					ImGuiWindowFlags_NoMove |
+					ImGuiWindowFlags_NoCollapse |
+					ImGuiWindowFlags_NoScrollbar)) {
+
+					if (m_Config.TitleBarIconData != nullptr)
+					{
+						// draw the image in the center of this window
+						ImGui::SetCursorPos(ImVec2{ ImGui::GetCursorPosX(), 5 });
+						auto size = m_Config.TitleBarIconData->GetSize();
+						ImGui::Image(m_Config.TitleBarIconData->GetTexture(), ImVec2{ size.x, 30 });
+					}
+					ImGui::SameLine(0, 10);
+
+					if (m_Config.MenuBarCallback != nullptr)
+					{
+						m_Config.MenuBarCallback(this);
+					}
+					ImGui::SameLine();
+
+					static auto tbButtonSizes = ImVec2{ 32, 32 };
+					static int tbButtonSpacing = 5;
+					static ImU32 tbButtonBgColor = IM_COL32(0, 0, 0, 0);
+					static ImU32 tbButtonHvColor = IM_COL32(255, 255, 255, 100);
+					static ImU32 tbButtonHvExitColor = IM_COL32(255, 0, 0, 100);
+					auto textSize = ImGui::CalcTextSize(m_Config.Title.c_str());
+
+					ImGui::SetCursorPosX(ImGui::GetWindowWidth() / 2 - textSize.x / 2);
+					ImGui::SetCursorPosY(textSize.y / 2);
+					ImGui::Text(m_Config.Title.c_str());
+					ImGui::SameLine(ImGui::GetWindowWidth() - ((tbButtonSizes.x + 16) * 3));
+					ImGui::PushStyleColor(ImGuiCol_Button, tbButtonBgColor);
+					ImGui::PushStyleColor(ImGuiCol_ButtonHovered, tbButtonHvColor);
+					ImGui::PushStyleColor(ImGuiCol_ButtonActive, tbButtonBgColor);
+					auto cursorY = ImGui::GetCursorPosY() - 5;
+					ImGui::SetCursorPosY(cursorY);
+					ImGui::BeginGroup();
+					if (ImGui::ImageButton("minimize", m_MinimizeIcon->GetTexture(), tbButtonSizes)) {
+						ShowWindow(hwnd, SW_MINIMIZE);
+					}
+					ImGui::SameLine(0, tbButtonSpacing);
+					ImGui::SetCursorPosY(cursorY);
+					if (ImGui::ImageButton("maximize", m_Maximized ? m_RestoreIcon->GetTexture() : m_MaximizeIcon->GetTexture(), tbButtonSizes))
+					{
+
+						if (!m_Maximized)
+						{
+							MONITORINFO monitorInfo = { sizeof(MONITORINFO) };
+							RECT wSize;
+							GetWindowRect(hwnd, &wSize);
+							lastPos.x = wSize.left;
+							lastPos.y = wSize.top;
+							lastSize.x = wSize.right - wSize.left;
+							lastSize.y = wSize.bottom - wSize.top;
+							if (GetMonitorInfo(MonitorFromWindow(hwnd, MONITOR_DEFAULTTONEAREST), &monitorInfo)) {
+								RECT workArea = monitorInfo.rcWork;
+
+								SetWindowPos(hwnd, nullptr,
+									workArea.left, workArea.top,
+									workArea.right - workArea.left,
+									workArea.bottom - workArea.top,
+									SWP_NOZORDER | SWP_NOACTIVATE);
+								m_Maximized = true;
+							}
+						}
+						else
+						{
+							SetWindowPos(hwnd, nullptr,
+								lastPos.x, lastPos.y,
+								lastSize.x,
+								lastSize.y,
+								SWP_NOZORDER | SWP_NOACTIVATE);
+							m_Maximized = false;
+						}
+
+					}
+					ImGui::PushStyleColor(ImGuiCol_ButtonHovered, tbButtonHvExitColor);
+					ImGui::SameLine(0, tbButtonSpacing);
+					ImGui::SetCursorPosY(cursorY);
+					if (ImGui::ImageButton("close", m_CloseIcon->GetTexture(), tbButtonSizes)) {
+						PostQuitMessage(0);
+					}
+					ImGui::EndGroup();
+					ImGui::PopStyleColor(4);
+
+					ImGui::End();
+				}
+
+				ImGui::PopStyleVar(2);
+				ImGui::PopStyleColor(1);
+			}
+
+			ImGuiWindowFlags window_flags = ImGuiWindowFlags_NoDocking;
+
+			ImGuiViewport* viewport = ImGui::GetMainViewport();
+			auto windowPos = viewport->Pos;
+			windowPos.y += titleBarHeight;
+			ImGui::SetNextWindowPos(windowPos);
+			auto windowSize = viewport->Size;
+			windowSize.y -= titleBarHeight;
+			ImGui::SetNextWindowSize(windowSize);
+			ImGui::SetNextWindowViewport(viewport->ID);
+			ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.0f);
+			ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
+			window_flags |= ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove;
+			window_flags |= ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoNavFocus;
+
+			ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 3.0f);
+
+			ImGui::PushStyleColor(ImGuiCol_MenuBarBg, ImVec4{ 0.0f, 0.0f, 0.0f, 0.0f });
+
+			ImGui::Begin("DockSpaceWindow", nullptr, window_flags);
+			ImGui::PopStyleVar(3);
+			ImGui::PopStyleColor();
+
+			auto dockId = ImGui::GetID("MyDockspace");
+			ImGui::DockSpace(dockId, ImVec2{ (float)g_ResizeWidth, (float)g_ResizeHeight }, ImGuiDockNodeFlags_NoUndocking);
+			for (auto& layer : m_Layers)
+			{
+				ImGui::SetNextWindowDockID(dockId, ImGuiCond_Always);
+				layer->OnRender(this);
+			}
+
+			ImGui::End();
+		}
+
+		// Rendering
+		ImGui::Render();
+		const float clear_color_with_alpha[4] = { clear_color.x * clear_color.w, clear_color.y * clear_color.w, clear_color.z * clear_color.w, clear_color.w };
+		m_pd3dDeviceContext->OMSetRenderTargets(1, &m_mainRenderTargetView, nullptr);
+		m_pd3dDeviceContext->ClearRenderTargetView(m_mainRenderTargetView, clear_color_with_alpha);
+		ImGui_ImplDX11_RenderDrawData(ImGui::GetDrawData());
+
+		// Update and Render additional Platform Windows
+		if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
+		{
+			ImGui::UpdatePlatformWindows();
+			ImGui::RenderPlatformWindowsDefault();
+		}
+
+		// Present
+		HRESULT hr = m_pSwapChain->Present(1, 0);   // Present with vsync
+		//HRESULT hr = g_pSwapChain->Present(0, 0); // Present without vsync
+		m_SwapChainOccluded = (hr == DXGI_STATUS_OCCLUDED);
+		m_Rendering = false;
+	}
+
 	void Application::AddLayer(std::shared_ptr<Layer> layer)
 	{
 		m_Layers.push_back(layer);
@@ -395,6 +415,7 @@ namespace Bedxo
 		}
 		return std::make_shared<Image>(shader, ImVec2(desc.Width, desc.Height));
 	}
+
 	LRESULT __stdcall Application::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 	{
 		if (ImGui_ImplWin32_WndProcHandler(hWnd, msg, wParam, lParam))
@@ -454,20 +475,13 @@ namespace Bedxo
 				return HTCAPTION;
 			break;
 		}
-		case WM_ACTIVATE:
-			if (wParam != WA_INACTIVE) {
-				SetForegroundWindow(hWnd);  // Ensure window gets focus
-				SetActiveWindow(hWnd);
-			}
-			break;
-		case WM_SETFOCUS:
-			SetActiveWindow(hWnd);
-			break;
 		case WM_SIZE:
 			if (wParam == SIZE_MINIMIZED)
 				return 0;
 			Application::g_ResizeWidth = (UINT)LOWORD(lParam); // Queue resize
 			Application::g_ResizeHeight = (UINT)HIWORD(lParam);
+			ResizeSwapChain();
+			Frame(hWnd);
 			return 0;
 		case WM_SYSCOMMAND:
 			if ((wParam & 0xfff0) == SC_KEYMENU) // Disable ALT application menu

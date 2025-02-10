@@ -13,8 +13,18 @@ class MainLayer : public Bedxo::Layer
             ++clickedTimes;
         ImGui::SameLine();
         ImGui::Text("Clicked: %d", clickedTimes);
-		ImGui::Text("Logo texture: %d", m_Logo->GetTexture());
+		ImGui::Text("Logo texture: %x", m_Logo->GetTexture());
 		ImGui::ImageButton("Click Me",m_Logo->GetTexture(), m_Logo->GetSize());
+
+		static float t = 0;
+		static float values[120];
+		for (int i = 0; i < 120; i++)
+		{
+			values[i] = 0.5f + 0.5f * sinf(2 * 3.1415f * 0.1f * (i + t));
+		}
+		t += 0.1f;
+		ImGui::PlotLines("Frame Times", values, IM_ARRAYSIZE(values));
+
         ImGui::End();
         //ImGui::ShowDemoWindow();
     }
@@ -39,7 +49,7 @@ class MainLayer2 : public Bedxo::Layer
             ++clickedTimes;
         ImGui::SameLine();
         ImGui::Text("Clicked: %d", clickedTimes);
-        ImGui::Text("Logo texture: %d", m_Logo->GetTexture());
+        ImGui::Text("Logo texture: %x", m_Logo->GetTexture());
         ImGui::Image(m_Logo->GetTexture(), m_Logo->GetSize());
         ImGui::End();
     }
