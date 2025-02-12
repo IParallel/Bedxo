@@ -5,16 +5,16 @@
 #include "logo.h"
 class MainLayer : public Bedxo::Layer
 {
-    void virtual OnRender(Bedxo::Application* app) override
-    {
-        ImGui::Begin("hello");
-        ImGui::Text("a");
-        if (ImGui::Button("CLICK ME"))
-            ++clickedTimes;
-        ImGui::SameLine();
-        ImGui::Text("Clicked: %d", clickedTimes);
+	void virtual OnRender(Bedxo::Application* app) override
+	{
+		ImGui::Begin("hello");
+		ImGui::Text("a");
+		if (ImGui::Button("CLICK ME"))
+			++clickedTimes;
+		ImGui::SameLine();
+		ImGui::Text("Clicked: %d", clickedTimes);
 		ImGui::Text("Logo texture: %x", m_Logo->GetTexture());
-		ImGui::ImageButton("Click Me",m_Logo->GetTexture(), m_Logo->GetSize());
+		ImGui::ImageButton("Click Me", m_Logo->GetTexture(), m_Logo->GetSize());
 
 		static float t = 0;
 		static float values[120];
@@ -25,41 +25,47 @@ class MainLayer : public Bedxo::Layer
 		t += 0.1f;
 		ImGui::PlotLines("Frame Times", values, IM_ARRAYSIZE(values));
 
-        ImGui::End();
-        //ImGui::ShowDemoWindow();
-    }
+		ImGui::End();
+		//ImGui::ShowDemoWindow();
+	}
 
 	void virtual OnStart(Bedxo::Application* app) override
 	{
 		m_Logo = app->LoadImageFromMemory((void*)::logo, sizeof(::logo));
-        app->m_Config.TitleBarIconData = m_Logo;
+		app->m_Config.TitleBarIconData = m_Logo;
 	}
 private:
-    int clickedTimes = 0;
-    std::shared_ptr<Bedxo::Image> m_Logo = nullptr;
+	int clickedTimes = 0;
+	std::shared_ptr<Bedxo::Image> m_Logo = nullptr;
 };
 
 class MainLayer2 : public Bedxo::Layer
 {
-    void virtual OnRender(Bedxo::Application* app) override
-    {
-        ImGui::Begin("hello2");
-        ImGui::Text("First app");
-        if (ImGui::Button("CLICK ME"))
-            ++clickedTimes;
-        ImGui::SameLine();
-        ImGui::Text("Clicked: %d", clickedTimes);
-        ImGui::Text("Logo texture: %x", m_Logo->GetTexture());
-        ImGui::Image(m_Logo->GetTexture(), m_Logo->GetSize());
-        ImGui::End();
-    }
+	void virtual OnRender(Bedxo::Application* app) override
+	{
+		ImGui::Begin("hello2");
+		ImGui::Text("First app");
+		if (ImGui::Button("CLICK ME"))
+			++clickedTimes;
+		ImGui::SameLine();
+		ImGui::Text("Clicked: %d", clickedTimes);
+		ImGui::Text("Logo texture: %x", m_Logo->GetTexture());
+		ImGui::Image(m_Logo->GetTexture(), m_Logo->GetSize());
+		ImGui::End();
+	}
 
-    void virtual OnStart(Bedxo::Application* app) override
-    {
-        m_Logo = app->LoadImageFromFile("./favicon.png");
-    }
+	void virtual OnStart(Bedxo::Application* app) override
+	{
+		try {
+			m_Logo = app->LoadImageFromFile("./favicon.png");
+		}
+		catch (...)
+		{
+			std::cout << "Failed to load image" << std::endl;
+		}
+	}
 private:
-    int clickedTimes = 0;
+	int clickedTimes = 0;
 	std::shared_ptr<Bedxo::Image> m_Logo = nullptr;
 };
 
@@ -71,10 +77,10 @@ int main()
 {
 	auto appConfig = Bedxo::AppConfig();
 	appConfig.Title = "Bedxo Application";
-    Bedxo::Application app = Bedxo::Application(appConfig);
-    auto mainLayer = std::make_shared<MainLayer>();
-    auto mainLayer2 = std::make_shared<MainLayer2>();
-    app.AddLayer(mainLayer);
-    app.AddLayer(mainLayer2);
-    app.Start();
+	Bedxo::Application app = Bedxo::Application(appConfig);
+	auto mainLayer2 = std::make_shared<MainLayer2>();
+	auto mainLayer = std::make_shared<MainLayer>();
+	app.AddLayer(mainLayer);
+	app.AddLayer(mainLayer2);
+	app.Start();
 }
