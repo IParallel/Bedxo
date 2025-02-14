@@ -3,6 +3,7 @@
 #include <Bedxo/Layer.h>
 #include <memory>
 #include "logo.h"
+
 class MainLayer : public Bedxo::Layer
 {
 	void virtual OnRender(Bedxo::Application* app) override

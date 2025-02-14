@@ -31,9 +31,6 @@ namespace Bedxo
 		bool UseCustomFont = false;
 	};
 
-
-	LRESULT WINAPI WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
-
 	class Application
 	{
 	public:
