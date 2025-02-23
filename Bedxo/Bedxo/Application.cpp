@@ -255,6 +255,8 @@ namespace Bedxo
 					ImGui::PushStyleColor(ImGuiCol_Button, tbButtonBgColor);
 					ImGui::PushStyleColor(ImGuiCol_ButtonHovered, tbButtonHvColor);
 					ImGui::PushStyleColor(ImGuiCol_ButtonActive, tbButtonBgColor);
+					ImGui::PushStyleVar(ImGuiStyleVar_FrameBorderSize, 0);
+					ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 0);
 					auto cursorY = ImGui::GetCursorPosY() - 5;
 					ImGui::SetCursorPosY(cursorY);
 					ImGui::BeginGroup();
@@ -305,6 +307,7 @@ namespace Bedxo
 					}
 					ImGui::EndGroup();
 					ImGui::PopStyleColor(4);
+					ImGui::PopStyleVar(2);
 
 					ImGui::End();
 				}
@@ -342,6 +345,22 @@ namespace Bedxo
 			{
 				ImGui::SetNextWindowDockID(dockId, ImGuiCond_Always);
 				layer->OnRender(this);
+			}
+
+			static bool firstFocusDone = false;
+			// Only focus the first tab on startup
+			if (!firstFocusDone)
+			{
+				ImGuiDockNode* node = ImGui::DockBuilderGetNode(dockId);
+				if (node && node->TabBar && !node->TabBar->Tabs.empty())
+				{
+					auto& firstTabId = node->TabBar->Tabs[0];
+					node->TabBar->SelectedTabId = firstTabId.ID;
+					node->SelectedTabId = firstTabId.ID;
+					ImGui::SetWindowFocus(firstTabId.Window->Name);
+				}
+
+				firstFocusDone = true;
 			}
 
 			ImGui::End();
