@@ -18,12 +18,12 @@
   ```cpp
   class ExampleDerivedLayer : public Bedxo::Layer
   {
-	void virtual OnRender(Bedxo::Application* app) override
+	virtual void OnRender(Bedxo::Application* app) override
 	{
     // your imgui code here
 	}
 
-	void virtual OnStart(Bedxo::Application* app) override
+	virtual void OnStart(Bedxo::Application* app) override
 	{
     // this calls once per layer
 	}

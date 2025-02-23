@@ -6,7 +6,7 @@
 
 class MainLayer : public Bedxo::Layer
 {
-	void virtual OnRender(Bedxo::Application* app) override
+	virtual void OnRender(Bedxo::Application* app) override
 	{
 		ImGui::Begin("hello");
 		ImGui::Text("a");
@@ -30,7 +30,7 @@ class MainLayer : public Bedxo::Layer
 		//ImGui::ShowDemoWindow();
 	}
 
-	void virtual OnStart(Bedxo::Application* app) override
+	virtual void OnStart(Bedxo::Application* app) override
 	{
 		m_Logo = app->LoadImageFromMemory((void*)::logo, sizeof(::logo));
 		app->m_Config.TitleBarIconData = m_Logo;
@@ -42,7 +42,7 @@ private:
 
 class MainLayer2 : public Bedxo::Layer
 {
-	void virtual OnRender(Bedxo::Application* app) override
+	virtual void OnRender(Bedxo::Application* app) override
 	{
 		ImGui::Begin("hello2");
 		ImGui::Text("First app");
@@ -55,7 +55,7 @@ class MainLayer2 : public Bedxo::Layer
 		ImGui::End();
 	}
 
-	void virtual OnStart(Bedxo::Application* app) override
+	virtual void OnStart(Bedxo::Application* app) override
 	{
 		try {
 			m_Logo = app->LoadImageFromFile("./favicon.png");
