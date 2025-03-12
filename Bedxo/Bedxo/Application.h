@@ -31,6 +31,8 @@ namespace Bedxo
 		ImU32 TitleBarBgColor = IM_COL32(10, 10, 10, 255);
 		// If this enabled the app will not load the default font
 		bool UseCustomFont = false;
+		// Window size
+		ImVec2 WindowSize = ImVec2(1280, 720);
 	};
 
 	class Application
@@ -70,7 +72,7 @@ namespace Bedxo
 		ID3D11Device* m_pd3dDevice = nullptr;
 		ID3D11DeviceContext* m_pd3dDeviceContext = nullptr;
 		IDXGISwapChain* m_pSwapChain = nullptr;
-		bool                     m_SwapChainOccluded = false;
+		bool m_SwapChainOccluded = false;
 		ID3D11RenderTargetView* m_mainRenderTargetView = nullptr;
 		std::vector<std::shared_ptr<Layer>> m_Layers;
 

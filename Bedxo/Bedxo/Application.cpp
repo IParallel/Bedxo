@@ -23,7 +23,7 @@ namespace Bedxo
 		HWND hwnd = ::CreateWindowEx(WS_EX_APPWINDOW, // Behave as normal window idk why the normal windows get locked on alt+tab :P
 			wc.lpszClassName, m_Config.Title.c_str(),
 			WS_POPUP,                        // Borderless window
-			100, 100, 1280, 800,
+			100, 100, m_Config.WindowSize.x, m_Config.WindowSize.y,
 			nullptr, nullptr, wc.hInstance, nullptr);
 
 		SetWindowLongPtr(hwnd, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(this)); // we store our class pointer to access later in the WndProc function
