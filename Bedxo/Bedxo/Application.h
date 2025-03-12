@@ -22,7 +22,7 @@ namespace Bedxo
 		std::string Title = "Bedxo Application";
 		/// <summary>
 		/// This one may be set on the start of any layer <para/>
-		/// This will clamp the height to 30px, the width will not be changed
+		/// The icon height will be clamped to 30px, the width will not be changed
 		/// </summary>
 		std::shared_ptr<Image> TitleBarIconData = nullptr;
 		//custom menu callback to draw whatever you want in the 40px title bar after the logo
@@ -33,6 +33,11 @@ namespace Bedxo
 		bool UseCustomFont = false;
 		// Window size
 		ImVec2 WindowSize = ImVec2(1280, 720);
+		/// <summary>
+		/// If this is set to false the docking will be managed by the user. <para/>
+		/// Otherwise every layer will be added in order creating a tabbed window
+		///	<summary>
+		bool UseAutoDocking = true;
 	};
 
 	class Application

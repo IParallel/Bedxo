@@ -78,6 +78,7 @@ int main()
 {
 	auto appConfig = Bedxo::AppConfig();
 	appConfig.Title = "Bedxo Application";
+	appConfig.UseAutoDocking = false;
 	Bedxo::Application app = Bedxo::Application(appConfig);
 	auto mainLayer2 = std::make_shared<MainLayer2>();
 	auto mainLayer = std::make_shared<MainLayer>();

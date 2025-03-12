@@ -49,8 +49,7 @@ namespace Bedxo
 		io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;         // Enable Docking
 		// io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;       // Enable Multi-Viewport / Platform Windows
 
-		// disabling the imgui.ini file
-		io.IniFilename = nullptr;
+		io.IniFilename = "app_config.ini";
 
 		// Setup Dear ImGui style
 		ImGui::StyleColorsDark();
@@ -334,35 +333,37 @@ namespace Bedxo
 			ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 3.0f);
 
 			ImGui::PushStyleColor(ImGuiCol_MenuBarBg, ImVec4{ 0.0f, 0.0f, 0.0f, 0.0f });
-
 			ImGui::Begin("DockSpaceWindow", nullptr, window_flags);
 			ImGui::PopStyleVar(3);
 			ImGui::PopStyleColor();
-
 			auto dockId = ImGui::GetID("MyDockspace");
-			ImGui::DockSpace(dockId, ImVec2{ (float)g_ResizeWidth, (float)g_ResizeHeight }, ImGuiDockNodeFlags_NoUndocking);
+			ImGui::DockSpace(dockId, ImVec2{ (float)g_ResizeWidth, (float)g_ResizeHeight }, m_Config.UseAutoDocking ? ImGuiDockNodeFlags_NoUndocking : ImGuiDockNodeFlags_None);
+			
 			for (auto& layer : m_Layers)
 			{
-				ImGui::SetNextWindowDockID(dockId, ImGuiCond_Always);
+				if (m_Config.UseAutoDocking)
+					ImGui::SetNextWindowDockID(dockId, ImGuiCond_Always);
 				layer->OnRender(this);
 			}
 
-			static bool firstFocusDone = false;
-			// Only focus the first tab on startup
-			if (!firstFocusDone)
+			if (m_Config.UseAutoDocking)
 			{
-				ImGuiDockNode* node = ImGui::DockBuilderGetNode(dockId);
-				if (node && node->TabBar && !node->TabBar->Tabs.empty())
+				static bool firstFocusDone = false;
+				// Only focus the first tab on startup
+				if (!firstFocusDone)
 				{
-					auto& firstTabId = node->TabBar->Tabs[0];
-					node->TabBar->SelectedTabId = firstTabId.ID;
-					node->SelectedTabId = firstTabId.ID;
-					ImGui::SetWindowFocus(firstTabId.Window->Name);
+					ImGuiDockNode* node = ImGui::DockBuilderGetNode(dockId);
+					if (node && node->TabBar && !node->TabBar->Tabs.empty())
+					{
+						auto& firstTabId = node->TabBar->Tabs[0];
+						node->TabBar->SelectedTabId = firstTabId.ID;
+						node->SelectedTabId = firstTabId.ID;
+						ImGui::SetWindowFocus(firstTabId.Window->Name);
+					}
+
+					firstFocusDone = true;
 				}
-
-				firstFocusDone = true;
 			}
-
 			ImGui::End();
 		}
 
